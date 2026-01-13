@@ -159,7 +159,7 @@ function open_adguard(headers, path) {
 
     const rule_set_adguard = JSON.parse(JSON.stringify(complete_rule_set));
     rule_set_adguard.tag = "site-adguard"
-    rule_set_adguard.url = "https://raw.githubusercontent.com/kumalum/rule-set/main/adguard.srs"
+    rule_set_adguard.url = "https://raw.githubusercontent.com/kumalum/GFW/rule-set/adguard.srs"
 
     config.route.rule_set.push(rule_set_adguard)
     config.route.rules[index_map.rules_ad].rule_set.push(rule_set_adguard.tag)
