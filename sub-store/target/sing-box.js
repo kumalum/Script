@@ -29,10 +29,12 @@ const index_map = {
     // 需要修改值的所在的列表位置
     rules_ad: -1, // 广告的路由规则在 dns.rules 和 route.rules 
     // 哔哩哔哩和全球代理出站，在 outbouns 中的位置 
-    outbouns_bilibili: 2,
+    outbouns_bilibili: 4,
     outbouns_proxy: 0,
     // tun 在 inbounds 中的位置
-    inbounds_tun: 0
+    inbounds_tun: 0,
+    // resolver 在 dns.servers 中的位置
+    server_resolver: 0
 }
 
 /*
@@ -46,6 +48,11 @@ const complete_outbounds_urltest = {
     outbounds: [],
     url: "https://www.gstatic.com/generate_204  ",
     interval: "3m"
+}
+
+const complete_dns_servers_resolver = {
+    type: "local",
+    tag: "dns-resolver"
 }
 
 let complete_rule_set = {
@@ -102,36 +109,53 @@ config.outbounds.push(...proxies)
 /**
  * 根据请求参数进行定制化 sing-box 配置
  */
-const { headers, url, path } = $options?._req
-// 获取请求头、网址以及路径
 
-if ("proxy_flag" in headers && headers.proxy_flag === "true") {
-    // 如果 proxy_flag 存在于请求头中，且值为 true 则给rule_set.url添加代理
-    config.route.rule_set.map(rule_set => {
-        rule_set.download_detour = "🏡本地代理"
-        rule_set.url = $arguments.PROXY + rule_set.url
-    })
+try {
+    const { headers, url, path } = $options?._req
+    // 获取请求头、网址以及路径
+
+    system_rule(headers)
+    open_adguard(headers, path)
+    open_proxy_rule_set(headers, path)
+
+
+} catch {
+    console.log("test");
+
 }
 
-const ua = headers["user-agent"]
-if (ua.includes("Linux")) {
-    // 使用 nftables 改善 TUN 路由和性能
-    config.inbounds[index_map.inbounds_tun].auto_redirect = true
-    if ("exclude_uid" in headers) {
-        // 不代理该 uid， 仅在 linux 下生效
-        config.inbounds[index_map.inbounds_tun].exclude_uid = headers.exclude_uid
+function system_rule(headers) {
+
+    const ua = headers["user-agent"]
+
+    if (/Linux/i.test(ua)) {
+        // 在 Linux 设备下的规则
+        // 使用 nftables 改善 TUN 路由和性能
+        config.inbounds[index_map.inbounds_tun].auto_redirect = true
+        if ("exclude_uid" in headers) {
+            // 不代理该 uid， 仅在 linux 下生效
+            config.inbounds[index_map.inbounds_tun].exclude_uid = headers.exclude_uid
+        }
+    } else if (/sfa|android|phone/i.test(ua)) {
+        // 在 Android 设备下的规则
+        // 接受 Android VPN 作为上游网卡
+        config.route.override_android_vpn = true
+        // 使用非 local 类型的dns 服务器 在安卓客户端会不工作
+        // 将 alidns 解析器 替换为本地解析器
+        config.dns.server[index_map.server_resolver] = complete_dns_servers_resolver
+    } else if (/windows/i.test(ua)) {
+        return
     }
-} else if (ua.includes("Windows")) {
-    // 此功能在 windows 下不生效，开启后sing-box 不工作
-    config.inbounds[index_map.inbounds_tun].auto_redirect = false
-} else (
-    // 接受 Android VPN 作为上游网卡
-    config.route.override_android_vpn = true
-)
 
+}
 
-if ("adguard" in headers && headers.adguard === "true") {
-    // 判断是否开启 adguard 规则
+function open_adguard(headers, path) {
+    // 开启 adguard 规则
+
+    if (! if_flag(headers, path, "adguard")) {
+        return
+    }
+
     const rule_set_adguard = JSON.parse(JSON.stringify(complete_rule_set));
     rule_set_adguard.tag = "site-adguard"
     rule_set_adguard.url = "https://raw.githubusercontent.com/kumalum/rule-set/main/adguard.srs"
@@ -139,6 +163,40 @@ if ("adguard" in headers && headers.adguard === "true") {
     config.route.rule_set.push(rule_set_adguard)
     config.route.rules[index_map.rules_ad].rule_set.push(rule_set_adguard.tag)
     config.dns.rules[index_map.rules_ad].rule_set.push(rule_set_adguard.tag)
+
+}
+
+function open_proxy_rule_set(headers, path) {
+    // 给rule_set.url添加代理
+
+    if (! if_flag(headers, path, "proxy")) {
+        return
+    }
+
+    config.route.rule_set.map(rule_set => {
+        if (! /githubusercontent/i.test(rule_set.url)) {
+            // 若不是github 的连接 则跳出本次循环
+            return
+        }
+        rule_set.download_detour = "🏡本地代理"
+        rule_set.url = $arguments.PROXY + rule_set.url
+    })
+
+}
+
+function if_flag(headers, path, string) {
+
+    const flag = false
+    if (string in headers && headers[string] === "true") {
+        flag = true
+    }
+
+    if (string in path && path[string] === "true") {
+        flag = true
+    }
+
+    return flag
+
 }
 
 // JSON
