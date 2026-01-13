@@ -142,7 +142,7 @@ function system_rule(headers) {
         config.route.override_android_vpn = true
         // 使用非 local 类型的dns 服务器 在安卓客户端会不工作
         // 将 alidns 解析器 替换为本地解析器
-        config.dns.server[index_map.server_resolver] = complete_dns_servers_resolver
+        config.dns.servers[index_map.server_resolver] = complete_dns_servers_resolver
     } else if (/windows/i.test(ua)) {
         return
     }
