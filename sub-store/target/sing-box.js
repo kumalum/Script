@@ -27,7 +27,9 @@ const app_mapping = {
 
 const index_map = {
     // 需要修改值的所在的列表位置
-    rules_ad: -1, // 广告的路由规则在 dns.rules 和 route.rules 
+    // 广告的路由规则位置
+    dns_rules_ad: 0,
+    route_rules_ad: 2,
     // 哔哩哔哩和全球代理出站，在 outbouns 中的位置 
     outbouns_bilibili: 4,
     outbouns_proxy: 0,
@@ -162,8 +164,8 @@ function open_adguard(headers, path) {
     rule_set_adguard.url = "https://raw.githubusercontent.com/kumalum/GFW/rule-set/adguard.srs"
 
     config.route.rule_set.push(rule_set_adguard)
-    config.route.rules[index_map.rules_ad].rule_set.push(rule_set_adguard.tag)
-    config.dns.rules[index_map.rules_ad].rule_set.push(rule_set_adguard.tag)
+    config.route.rules[index_map.route_rules_ad].rule_set.push(rule_set_adguard.tag)
+    config.dns.rules[index_map.dns_rules_ad].rule_set.push(rule_set_adguard.tag)
 
 }
 
