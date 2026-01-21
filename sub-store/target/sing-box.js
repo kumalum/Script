@@ -192,7 +192,7 @@ function if_flag(headers, path, string) {
         flag = true
     }
 
-    if (string in `${path}` && path[string] === "true") {
+    if (string in path.toString() && path[string] === "true") {
         flag = true
     }
 
