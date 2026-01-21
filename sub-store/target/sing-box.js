@@ -128,7 +128,14 @@ function system_rule(headers) {
 
     const ua = headers["user-agent"]
 
-    if (/Linux/i.test(ua)) {
+    if (/sfa|android|phone/i.test(ua)) {
+        // 在 Android 设备下的规则
+        // 接受 Android VPN 作为上游网卡
+        config.route.override_android_vpn = true
+        // 使用非 local 类型的dns 服务器 在安卓客户端会不工作
+        // 将 alidns 解析器 替换为本地解析器
+        config.dns.servers[index_map.server_resolver] = complete_dns_servers_resolver
+    } else if (/Linux/i.test(ua)) {
         // 在 Linux 设备下的规则
         // 使用 nftables 改善 TUN 路由和性能
         config.inbounds[index_map.inbounds_tun].auto_redirect = true
@@ -137,14 +144,7 @@ function system_rule(headers) {
             const exclude_uid = headers.exclude_uid.split(",").map(Number)
             config.inbounds[index_map.inbounds_tun].exclude_uid = exclude_uid
         }
-    } else if (/sfa|android|phone/i.test(ua)) {
-        // 在 Android 设备下的规则
-        // 接受 Android VPN 作为上游网卡
-        config.route.override_android_vpn = true
-        // 使用非 local 类型的dns 服务器 在安卓客户端会不工作
-        // 将 alidns 解析器 替换为本地解析器
-        config.dns.servers[index_map.server_resolver] = complete_dns_servers_resolver
-    } else if (/windows|nt|mingw/i.test(ua)) {
+    }  else if (/windows|nt|mingw/i.test(ua)) {
         return
     }
 
@@ -192,7 +192,7 @@ function if_flag(headers, path, string) {
         flag = true
     }
 
-    if (path.inbounds(string) && path[string] === "true") {
+    if (path.includes(string) && path[string] === "true") {
         flag = true
     }
 
