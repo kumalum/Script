@@ -120,10 +120,8 @@ try {
     open_adguard(headers, path)
     open_proxy_rule_set(headers, path)
 
-
-} catch {
-    console.log("test");
-
+} catch(e) {
+    console.error(e);
 }
 
 function system_rule(headers) {
